@@ -1,0 +1,16 @@
+message ReverseMsg {
+	required string name = 1;
+	required int32 num = 2;
+}
+
+message GpioControlMsg {
+	enum Port {
+		PortA = 0;
+		PortB = 1;
+		PortC = 2;
+	};
+
+	required Port port = 1; 
+	required int32 pin = 2;
+	required bool state = 3;
+}
