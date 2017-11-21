@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include "serial.h"
 
+const char ACK_BYTE = 'x';
+
 Serial::Serial(const char* path, int baud) {
 	fd = open(path, O_RDWR | O_NOCTTY | O_SYNC);
 	if (fd < 0) {
@@ -76,4 +78,10 @@ void Serial::send(int type, int size, void *data) {
 	write(fd, &type, sizeof(type));
 	write(fd, &size, sizeof(size));
 	write(fd, data, size);
+
+	char ack = 0;
+	read(fd, &ack, 1);
+	if(ack != ACK_BYTE) {
+		throw std::runtime_error("Did not received ACK byte");
+	}
 }
