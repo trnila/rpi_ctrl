@@ -34,30 +34,33 @@ Serial::Serial(const char* path, int baud) {
 			memset(payload, 0, sizeof(payload));
 			memset(msg, 0, sizeof(msg));
 
-			if(read(fd, header, sizeof(header)) != sizeof(header)) {
-				printf("failed to receive header\n");
+			int r = read(fd, header, sizeof(header));
+			if(r != sizeof(header)) {
+				printf("failed to receive header: %d\n", r);
 				continue;
 			}
-			printf("header: %x %x %x\n", header[0], header[1], header[2]);
 
-			int packetSize = (header[1] << 8) | header[2];
-			printf("packet %d, size: %d\n", header[0], packetSize);
+			int payloadSize = (header[1] << 8) | header[2];
+			printf("packet %d, size: %d\n", header[0], payloadSize);
 
-			if(read(fd, payload, packetSize) != packetSize) {
-				throw std::runtime_error("failed to received payload");
+			int offset = 0;
+			while(offset < payloadSize) {
+				int r = read(fd, payload + offset, payloadSize - offset);
+				offset += r;
 			}
 
 			auto it = handlers.find(header[0]);
 			if(it != handlers.end()) {
-				auto stream = pb_istream_from_buffer(payload, packetSize);
+				auto stream = pb_istream_from_buffer(payload, payloadSize);
 				if (!pb_decode(&stream, it->second.fields, &msg)) {
-					throw std::runtime_error("failed to decode ack packet");
+					printf("failed to decode ack packet: %s\n", stream.errmsg);
+				} else {
+					it->second.callback(msg);
 				}
-
-				it->second.callback(msg);
 			} else {
 				printf("Unknown frame\n");
 			}
+			printf("\n");
 		}
 	});
 }

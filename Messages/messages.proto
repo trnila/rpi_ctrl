@@ -11,6 +11,10 @@ message ReverseMsg {
 	required int32 num = 2;
 }
 
+message PrintMsg {
+    required string msg = 1;
+}
+
 message GpioControlMsg {
 	enum Port {
 		PortA = 0;

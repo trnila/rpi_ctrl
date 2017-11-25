@@ -45,6 +45,12 @@ int main(int argc, char** argv) {
 		printf("Received ping: %d\n", msg->seq);
 	});
 
+	serial.addHandler(3, PrintMsg_fields, [](void *param) {
+		PrintMsg *msg = (PrintMsg*) param;
+
+		printf("RECV: %s\n", msg->msg);
+	});
+
 	int seq = 0;
 	for(;;) {
 		ReverseMsg msg;
@@ -53,17 +59,15 @@ int main(int argc, char** argv) {
 
 		//sendMsg(serial, msg);
 
+		PingMsg ping;
+		ping.seq = seq++;
+		sendMsg(serial, ping);
+		usleep(100 * 1000);
 
 		if(rand() % 5 == 0) {
-			PingMsg ping;
-			ping.seq = seq++;
-			sendMsg(serial, ping);
+			digital_write(serial, GpioControlMsg_Port_PortB, 4, rand() % 2);
 			usleep(100 * 1000);
 		}
-
-
-		digital_write(serial, GpioControlMsg_Port_PortB, 4, rand() % 2);
-		usleep(100 * 1000);
 	}
 
 	return 0;
