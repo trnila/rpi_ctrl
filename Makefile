@@ -1,6 +1,7 @@
 CXXFLAGS=-I./vendor/nanopb
 CFLAGS=$(CXXFLAGS)
 CC=g++
+LDFLAGS=-lpthread
 
 OBJECTS=main.o \
 	serial.o \

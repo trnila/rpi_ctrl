@@ -6,9 +6,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdexcept>
+#include <iostream>
+#include "pb.h"
+#include "pb_decode.h"
 #include "serial.h"
+#include "Messages/messages.pb.h"
 
-const char ACK_BYTE = 'x';
+const int frameSize = 20;
+
 
 Serial::Serial(const char* path, int baud) {
 	fd = open(path, O_RDWR | O_NOCTTY | O_SYNC);
@@ -18,6 +23,43 @@ Serial::Serial(const char* path, int baud) {
 
 	setInterfaceAttribs(baud, 0);
 	setBlocking(0);
+
+	thread = std::thread([=]() {
+		uint8_t header[3];
+		uint8_t payload[1024];
+		uint8_t msg[1024];
+
+		for(;;) {
+			memset(header, 0, sizeof(header));
+			memset(payload, 0, sizeof(payload));
+			memset(msg, 0, sizeof(msg));
+
+			if(read(fd, header, sizeof(header)) != sizeof(header)) {
+				printf("failed to receive header\n");
+				continue;
+			}
+			printf("header: %x %x %x\n", header[0], header[1], header[2]);
+
+			int packetSize = (header[1] << 8) | header[2];
+			printf("packet %d, size: %d\n", header[0], packetSize);
+
+			if(read(fd, payload, packetSize) != packetSize) {
+				throw std::runtime_error("failed to received payload");
+			}
+
+			auto it = handlers.find(header[0]);
+			if(it != handlers.end()) {
+				auto stream = pb_istream_from_buffer(payload, packetSize);
+				if (!pb_decode(&stream, it->second.fields, &msg)) {
+					throw std::runtime_error("failed to decode ack packet");
+				}
+
+				it->second.callback(msg);
+			} else {
+				printf("Unknown frame\n");
+			}
+		}
+	});
 }
 
 Serial::~Serial() {
@@ -42,7 +84,7 @@ int Serial::setInterfaceAttribs(int speed, int parity) {
 	// no canonical processing
 	tty.c_oflag = 0;                // no remapping, no delays
 	tty.c_cc[VMIN]  = 0;            // read doesn't block
-	tty.c_cc[VTIME] = 5;            // 0.5 seconds read timeout
+	tty.c_cc[VTIME] = 50;            // 0.5 seconds read timeout
 
 	tty.c_iflag &= ~(IXON | IXOFF | IXANY); // shut off xon/xoff ctrl
 
@@ -75,13 +117,15 @@ void Serial::setBlocking(int should_block) {
 }
 
 void Serial::send(int type, int size, void *data) {
-	write(fd, &type, sizeof(type));
-	write(fd, &size, sizeof(size));
-	write(fd, data, size);
+	uint8_t header[3];
+	header[0] = type;
+	header[1] = (size & 0xFF00) >> 8;
+	header[2] = size & 0xFF;
 
-	char ack = 0;
-	read(fd, &ack, 1);
-	if(ack != ACK_BYTE) {
-		throw std::runtime_error("Did not received ACK byte");
+	write(fd, header, sizeof(header));
+	write(fd, data, size);
+	for(int i = sizeof(header) + size; i < frameSize; i++) {
+		char c = 0;
+		write(fd, &c, 1);
 	}
 }

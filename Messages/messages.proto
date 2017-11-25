@@ -1,3 +1,11 @@
+message AckMsg {
+    required int32 id = 1;
+}
+
+message PingMsg {
+    required int32 seq = 1;
+}
+
 message ReverseMsg {
 	required string name = 1;
 	required int32 num = 2;
