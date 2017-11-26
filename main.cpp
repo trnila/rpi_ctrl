@@ -33,11 +33,6 @@ void digital_write(Serial &serial, _GpioControlMsg_Port port, int pin, int state
 }
 
 int main(int argc, char** argv) {
-	if(argc != 3) {
-		printf("Usage: %s string number\n", argv[0]);
-		return 1;
-	}
-
 	Serial serial("/dev/ttyAMA0", B921600);
 	serial.addHandler(2, PingMsg_fields, [](void *param) {
 		PingMsg *msg = (PingMsg*) param;
@@ -65,7 +60,7 @@ int main(int argc, char** argv) {
 		usleep(100 * 1000);
 
 		if(rand() % 5 == 0) {
-			digital_write(serial, GpioControlMsg_Port_PortB, 4, rand() % 2);
+			digital_write(serial, GpioControlMsg_Port_PortB, 8, rand() % 2);
 			usleep(100 * 1000);
 		}
 	}
