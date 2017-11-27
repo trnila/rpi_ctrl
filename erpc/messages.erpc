@@ -1,0 +1,9 @@
+enum Port {
+	GPIO_A,
+	GPIO_B,
+	GPIO_C
+}
+
+interface IO {
+	set_led(Port port, uint8 led, bool on) -> uint8
+}
