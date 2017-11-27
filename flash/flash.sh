@@ -27,3 +27,5 @@ reset
 python ~/stm32loader.py -p /dev/ttyAMA0 -e -w "$1"
 pin_set $boot1_pin 0
 reset
+pin_dir $reset_pin in
+pin_dir $boot1_pin in
