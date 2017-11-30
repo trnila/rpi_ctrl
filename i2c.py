@@ -4,7 +4,7 @@ import time
 BUS = 1
 ADDR = 0x8
 
-LEDS = [4, 1]
+LEDS = [8, 16]
 
 bus = smbus.SMBus(BUS)
 
