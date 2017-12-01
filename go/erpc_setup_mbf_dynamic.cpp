@@ -1,0 +1,1 @@
+../erpc/erpc_setup_mbf_dynamic.cpp
